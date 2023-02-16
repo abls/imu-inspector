@@ -9,9 +9,9 @@
 #define AIR_VID 0x3318
 #define AIR_PID 0x0424
 
-int rows, cols;
+static int rows, cols;
 
-static struct imu_report {
+static struct {
 	uint16_t unknown1; // 01 02
 	uint16_t unknown2;
 	uint8_t unknown3;
@@ -46,7 +46,9 @@ static struct imu_report {
 // guessing that those values are mag and rotation,
 // but confident about angular rate
 
-static void fix_report() {
+static void
+fix_report()
+{
 	report.unknown1 = le32toh(report.unknown1);
 	report.some_counter1 = le32toh(report.some_counter1);
 
@@ -65,7 +67,9 @@ static void fix_report() {
 	report.some_counter2 = le32toh(report.some_counter2);
 }
 
-static void print_report() {
+static void
+print_report()
+{
 	const int HEIGHT = 3;
 	const int WIDTH = 20;
 	int x = (cols - WIDTH) / 2;
@@ -76,7 +80,9 @@ static void print_report() {
 	mvprintw(y++, x, "Mag:  %04hx %04hx %04hx", report.mag1, report.mag2, report.mag3);
 }
 
-static void print_bytes(const uint8_t* buf, size_t len) {
+static void
+print_bytes(const uint8_t* buf, size_t len)
+{
 	const int WIDTH = 16;
 	int y = (rows - len / (WIDTH + 1)) / 2;
 	int x = (cols - WIDTH * 2 - WIDTH + 1) / 2;
@@ -87,12 +93,16 @@ static void print_bytes(const uint8_t* buf, size_t len) {
 	}
 }
 
-static void print_line(const char* s) {
+static void
+print_line(const char* s)
+{
 	int width = (width = strlen(s)) > cols ? cols : width;
 	mvprintw(rows / 2, (cols - width) / 2, "%s", s);
 }
 
-static hid_device* open_device() {
+static hid_device*
+open_device()
+{
 	struct hid_device_info* devs = hid_enumerate(AIR_VID, AIR_PID);
 	struct hid_device_info* cur_dev = devs;
 	hid_device* device = NULL;
@@ -110,7 +120,9 @@ static hid_device* open_device() {
 	return device;
 }
 
-int main() {
+int
+main(void)
+{
 	// open device
 	hid_device* device = open_device();
 	if (!device) {
@@ -148,7 +160,7 @@ int main() {
 			continue;
 		}
 
-		print_report(report);
+		print_report();
 		refresh();
 	} while (res);
 	getch();

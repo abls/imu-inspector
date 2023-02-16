@@ -7,7 +7,7 @@ TARGET = inspector
 all: $(TARGET)
 
 $(TARGET): $(TARGET).c
-	$(CC) $^ -o $@ $(LIBS)
+	$(CC) -o $@ $^ $(LIBS)
 
 clean:
 	$(RM) $(TARGET)
