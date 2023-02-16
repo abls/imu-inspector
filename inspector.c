@@ -27,11 +27,11 @@ static struct imu_report {
 	uint16_t unknown9; // 20 00
 	uint32_t unknown10; // 00 00 00 01
 	uint8_t unknown11;
-	int16_t gyro_roll;
+	int16_t rot_roll;
 	uint8_t unknown13;
-	int16_t gyro_pitch1;
+	int16_t rot_pitch1;
 	uint8_t unknown14;
-	int16_t gyro_pitch2; // not sure what is going on here
+	int16_t rot_pitch2; // not sure what is going on here
 	uint16_t unknown15; // 00 80
 	uint32_t unknown16; // 00 04 00 00
 	int16_t mag1;
@@ -43,6 +43,9 @@ static struct imu_report {
 	uint8_t unknown19;
 } __attribute__((__packed__)) report;
 
+// guessing that those values are mag and rotation,
+// but confident about angular rate
+
 static void fix_report() {
 	report.unknown1 = le32toh(report.unknown1);
 	report.some_counter1 = le32toh(report.some_counter1);
@@ -51,9 +54,9 @@ static void fix_report() {
 	report.rate_roll = le16toh(report.rate_roll);
 	report.rate_yaw = le16toh(report.rate_yaw);
 
-	report.gyro_roll = le16toh(report.gyro_roll);
-	report.gyro_pitch1 = le16toh(report.gyro_pitch1);
-	report.gyro_pitch2 = le16toh(report.gyro_pitch2);
+	report.rot_roll = le16toh(report.rot_roll);
+	report.rot_pitch1 = le16toh(report.rot_pitch1);
+	report.rot_pitch2 = le16toh(report.rot_pitch2);
 
 	report.mag1 = le16toh(report.mag1);
 	report.mag2 = le16toh(report.mag2);
@@ -69,11 +72,11 @@ static void print_report() {
 	int y = (rows - HEIGHT) / 2;
 
 	mvprintw(y++, x, "Rate: %04hx %04hx %04hx", report.rate_roll, report.rate_pitch, report.rate_yaw);
-	mvprintw(y++, x, "Gyro: %04hx %04hx %04hx", report.gyro_roll, report.gyro_pitch1, report.gyro_pitch2);
+	mvprintw(y++, x, "Rot:  %04hx %04hx %04hx", report.rot_roll, report.rot_pitch1, report.rot_pitch2);
 	mvprintw(y++, x, "Mag:  %04hx %04hx %04hx", report.mag1, report.mag2, report.mag3);
 }
 
-static void print_bytes(uint8_t* buf, size_t len) {
+static void print_bytes(const uint8_t* buf, size_t len) {
 	const int WIDTH = 16;
 	int y = (rows - len / (WIDTH + 1)) / 2;
 	int x = (cols - WIDTH * 2 - WIDTH + 1) / 2;
@@ -84,12 +87,12 @@ static void print_bytes(uint8_t* buf, size_t len) {
 	}
 }
 
-static void print_line(char* s) {
+static void print_line(const char* s) {
 	int width = (width = strlen(s)) > cols ? cols : width;
 	mvprintw(rows / 2, (cols - width) / 2, "%s", s);
 }
 
-static hid_device* get_device() {
+static hid_device* open_device() {
 	struct hid_device_info* devs = hid_enumerate(AIR_VID, AIR_PID);
 	struct hid_device_info* cur_dev = devs;
 	hid_device* device = NULL;
@@ -108,14 +111,14 @@ static hid_device* get_device() {
 }
 
 int main() {
-	// Open device
-	hid_device* device = get_device();
+	// open device
+	hid_device* device = open_device();
 	if (!device) {
 		printf("Unable to open device\n");
 		return 1;
 	}
 
-	// Open the floodgates
+	// open the floodgates
 	uint8_t magic_payload[] = { 0xaa, 0xc5, 0xd1, 0x21, 0x42, 0x04, 0x00, 0x19, 0x01 };
 	int res = hid_write(device, magic_payload, sizeof(magic_payload));
 	if (res < 0) {
@@ -141,7 +144,7 @@ int main() {
 		if (report.unknown1 != 0x0201) {
 			print_bytes((void*)&report, res);
 			refresh();
-			getch();
+			//getch();
 			continue;
 		}
 
